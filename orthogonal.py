@@ -10,11 +10,17 @@ T = 20
 
 
 # Initialize A, B, P randomly
-key = jax.random.PRNGKey(0)  # PRNG key for reproducibility
+key = jax.random.PRNGKey(0)  
 key, *subkeys = jax.random.split(key, 4)
 
 
 def loss_function(C, p):
+    '''
+    C: Matrix of shape (d, d)
+    p: Vector of shape (T,)
+    
+    Returns the loss function for a given C and p.
+    '''
     d = C.shape[0]
     t1 = (C.T @ C).sum() # t = t' = T-1
     t2 = (C ** 2).sum() # t = t' != T-1
@@ -26,10 +32,20 @@ def loss_function(C, p):
 
 
 def new_loss_function(A, B, p):
+    """
+    A: Matrix of shape (H, d)
+    B: Matrix of shape (H, d)
+    
+    Returns the loss function for a given A, B, and p."""
     C = B.T @ A
     return loss_function(C, p)
 
 def final_loss(A, B, P):
+    """
+    A: Matrix of shape (H, d)
+    B: Matrix of shape (H, d)
+    
+    Returns the total loss for a given A, B, and P."""
     total_loss = 0
     for t in range(T-1):
         p_t = P[t, :t+2]
@@ -45,7 +61,7 @@ B = alpha * jax.random.normal(subkeys[1], (H, d))
 P = alpha * jax.random.normal(subkeys[2], (T, T))
 
 learning_rate = 1e-3
-num_iterations = 100000
+num_iterations = 100_000
 
 # Gradient descent loop
 for i in range(num_iterations):
@@ -62,6 +78,7 @@ print("Final A:", A)
 print("Final B:", B)
 print("Final P:", P)
 print("Final Loss:", final_loss(A, B, P))
+
 np.save('tensors/A_orthogonal.npy', A)
 np.save('tensors/B_orthogonal.npy', B)
 np.save('tensors/P_orthogonal.npy', P)
@@ -91,6 +108,7 @@ mask = np.triu(np.ones_like(P), k=2)  # k=1 starts the mask above the diagonal
 
 # Apply the mask to set these elements to zero
 P_masked = np.where(mask, 0, P)
+
 # Plot for Matrix P
 axs[3].imshow(P_masked[:-1,:-1], cmap='cividis', interpolation='nearest')
 axs[3].set_title('P')

@@ -4,8 +4,6 @@ from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 import jax
 import jax.numpy as jnp
-from jax import grad, jit, vmap
-from jax.example_libraries import optimizers
 from scipy.stats import ortho_group  # Requires version 0.18 of scipy
 import numpy as np
 
@@ -54,18 +52,15 @@ class SelfAttention(nn.Module):
         if mask is not None:
             energy = energy.masked_fill(mask == 0, float("0."))
 
-        # attention_tok = torch.softmax(energy / (self.embed_size ** (1 / 2)), dim=3)
         attention_tok = energy / (self.embed_size ** (1 / 2))
 
         N = query.shape[0]
 
-        #attention = torch.softmax((energy + energy_pos) / (self.embed_size ** (1 / 2)), dim=3)
         attention = attention_tok 
 
         # attention shape: (N, heads, query_len, key_len)
         out = torch.einsum("nhql,nlhd->nqhd", [attention, values ]) # + values_pos
 
-        #print(out.shape)
         out = out.sum(2)
         out = self.fc_out(out)
 
@@ -185,9 +180,6 @@ class Transformer(nn.Module):
         return self.fc_out(out)
 
 sigma = .0  # Standard deviation of epsilon
-#
-
- # gives insight on the number of data we can fit.
 
 def dot_product(W_i, s_i):
     return jnp.dot(W_i, s_i)
@@ -230,12 +222,23 @@ class CustomDataset(Dataset):
 
 
 def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, batch_size=1024, save_folder='results', num_layers=1):
-
-
+    """
+    Train a transformer model on a dataset generated from an autoregressive model.
+    
+    dim_in: Dimensionality of the input sequence
+    n: Length of the sequence
+    embed_extension: Number of times to extend the input sequence
+    heads: Number of heads in the transformer model
+    lr: Learning rate
+    num_epochs: Number of epochs
+    batch_size: Batch size
+    save_folder: Folder to save the results
+    
+    Returns None."""
     save_output = 'dim_in_%s_n_%s_embed_extension_%s_num_layers_%s_lr_%s_num_epochs_%s_batch_size_%s' % (dim_in, n, embed_extension, num_layers, lr, num_epochs, batch_size)
 
-    D_train, W_train = batched_get_seq(2 ** 14, n=n, dim=dim_in)
-    D_test, W_test = batched_get_seq(2 ** 10, n=n, dim=dim_in)
+    D_train, _ = batched_get_seq(2 ** 14, n=n, dim=dim_in)
+    D_test, _ = batched_get_seq(2 ** 10, n=n, dim=dim_in)
 
     shifted_data = jnp.pad(D_train[:, :-1, :], ((0, 0), (1, 0), (0, 0)), constant_values=0)
     zero_vector = jnp.zeros_like(D_train)  # Zero vector of shape (b, T, d)
@@ -250,10 +253,8 @@ def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, b
     D_test = jnp.concatenate([zero_vector, D_test, shifted_data], axis=-1)
 
 
-    # Assuming your NumPy array is named 'numpy_array'
-    numpy_array = np.array(D_train)  # Your NumPy array of shape (262144, 21, 16)
+    numpy_array = np.array(D_train)  
 
-    # Create an instance of your custom dataset
     custom_dataset = CustomDataset(numpy_array)
 
     # Define DataLoader
@@ -268,9 +269,6 @@ def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, b
 
     test_dataloader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=False)
 
-
-    #embed_size = embed_extension * dim_in
-    
     # Create an instance of the model
 
     # Define loss function and optimizer
@@ -295,15 +293,11 @@ def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, b
     def train(epoch):
         for inputs, targets in train_dataloader:
             inputs, targets = inputs.to(device), targets.to(device)
-            # Zero the gradients
             optimizer.zero_grad()
 
-            # Forward pass
             outputs = model(inputs)
 
-            # Compute the loss
             loss = criterion(outputs[:,:,:dim_in], targets[:,:,dim_in:2*dim_in])
-            # Backward pass and optimization
             loss.backward()
             optimizer.step()
         if epoch % 10 == 0:
@@ -316,13 +310,11 @@ def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, b
             with torch.no_grad():
                 for inputs, targets in test_dataloader:
                     inputs, targets = inputs.to(device), targets.to(device)
-                    # Zero the gradients
 
                     outputs = model(inputs)
 
                     # Compute the loss
                     loss = criterion(outputs[:,:,:dim_in], targets[:,:,dim_in:2*dim_in])
-                    #loss = criterion(outputs[:,dim_in:], targets[:,dim_in:])
 
                 # Backward pass and optimization
             test_losses.append(loss.item())
@@ -335,4 +327,3 @@ def train(dim_in=5, n=50, embed_extension=1, heads=1, lr=1e-2, num_epochs=200, b
     np.save('%s/losses_%s.npy' % (save_folder, save_output), np.array([train_losses, test_losses]))
     torch.save(model.state_dict(), '%s/model_%s.pt' % (save_folder, save_output))
     print('done')
-

@@ -2,7 +2,6 @@ import jax
 import jax.numpy as jnp
 from jax import grad, jit, vmap
 from jax.example_libraries import optimizers
-from scipy.stats import ortho_group, special_ortho_group  # Requires version 0.18 of scipy
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
@@ -24,8 +23,8 @@ batched_hermitian_product = jax.vmap(hermitian_product)
 def batch_block_diag(W):
     return jax.scipy.linalg.block_diag(*W)
 
-def f(noise, p):
-
+def train_and_plot(mu):
+    noise = 0.
     dim = 1 #Dimensionality of s_t (1D)
     T = 30
     n = T
@@ -46,7 +45,7 @@ def f(noise, p):
         theta = np.random.uniform(0, 2*np.pi, (b,dim))
         
         # Create complex number with modulus 1 and random phase
-        W = jnp.exp(1j * theta / p)  
+        W = jnp.exp(1j * theta / mu)  
         s = s_0 
         for t in range(n):
             eps = jnp.array(np.random.randn(b, dim))
@@ -56,8 +55,6 @@ def f(noise, p):
 
     def tensordot(X_T, X):
         return jnp.tensordot(X_T,X, axes=((-1), (0)))
-
-    batched_tensordot = jax.vmap(tensordot)
 
 
     mask = jnp.tril(jnp.ones((T, T), dtype=jnp.bool_), k=0)
@@ -73,12 +70,6 @@ def f(noise, p):
     @jax.jit
     def linear_attention(params, s, n_layers=1, layer=1):
         p = params
-        #a = jnp.array([[1]])
-        #b = jnp.array([[1]])
-        #A = batch_block_diag(a).reshape((s.shape[-1], s.shape[-1]))
-        #B = batch_block_diag(b).reshape(A.shape)
-        #Q = jnp.matmul(s, A.transpose()) 
-        #V = jnp.matmul(s, B.transpose()) 
         attention_scores = jnp.matmul(jnp.conj(s), s.transpose((0, 2, 1)))
         attention_scores = attention_scores * up_diag * p + attention_scores * p * mask
         attended_values = jnp.matmul(attention_scores, s)
@@ -101,16 +92,12 @@ def f(noise, p):
         y = predictions[:,:-1] - D[:,2:,:]
         return (jnp.mean(jnp.abs(y) ** 2)* dim)
 
-    def generate_b(dim):
-        return jnp.array(np.random.randn(1, dim))
-
     def return_param_list(num_heads=1, dimension=dim, scale=1e-2, use_full_params=True): 
         params_list = []
         p_init = jnp.zeros((T,T))
         params_list += [p_init]
         return params_list
 
-    #jnp.array(np.random.randn(T, T))
     params_list = return_param_list(num_heads=dim, use_full_params=False)
 
     grad_loss = jax.jit(jax.grad(loss))
@@ -140,36 +127,32 @@ def f(noise, p):
         params = get_params(opt_state)
         l = loss(params, seq, D)
         if epoch % 100 == 0:
-            print(l)
+            print('loss: ', l)
         if len(losses) > 0 and losses[-1] < 1e-3:
            break
         losses.append(l)
         opt_state = update(params, opt_state, seq, D)
 
-    print(losses[-1])
     final_params = get_params(opt_state)
-    print(final_params[-1])
     mask_p = jnp.expand_dims(jnp.tril(jnp.ones((T, T), dtype=jnp.bool_), k=0), axis=0)
     p_opt = final_params[-1] * mask_p[0]
 
-    np.save('results/noisy_pe/pe_eps_%s_p_%s.npy' %(noise,p), p_opt)
+    np.save('results/noisy_pe/pe_eps_mu_%s.npy' %(mu), p_opt)
     plt.figure(figsize=(5, 5))
     plt.imshow((p_opt)[:-1,:-1])
     plt.axis('off')
-    plt.savefig('figures/pe_eps_%s_p_%s.pdf' %(noise,p))
+    plt.savefig('figures/pe_eps_mu_%s.pdf' %(mu))
 
-    #np.save('results/noisy_pe/proj_pe_eps_%s_p_%s.npy' %(noise,p), )
     plt.figure(figsize=(3, 3))
     plt.plot((p_opt)[:-1,:-1][-1])
     plt.xlabel('t')
     plt.ylabel('Value')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('figures/proj_pe_eps_%s_p_%s.pdf' %(noise,p))
+    plt.savefig('figures/proj_pe_eps_mu_%s.pdf' %(mu))
 
 
-for noise in [0.]:
-    for p in [50, 100, 200, 300]:
-        print(noise, p)
-        f(noise, p)
+for mu in [50, 100, 200, 300]:
+    print('mu = ', mu)
+    train_and_plot(mu)
  

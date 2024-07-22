@@ -6,45 +6,53 @@ This package has been developed and tested with `python3.11`. It is therefore no
 
 ## Reproducing the experiments/figures of the paper
 
-### Experiment in Figure 1 - Large-depth limit 
+### Experiment in Figure 3 - Illustration of the theoretical results
 
-We train the model as described in the paragraph _Large-depth limit_, with reduced number of training epochs. Feel free to adjust it. 
-
-To reproduce the left-hand figure: 
+To reproduce the left-hand part of the figure: 
 
 ```bash
-python finite_training_time_lipshitz.py
+python unitary.py
 ```
 
-The plot is saved in the folder figures.
-
-To reproduce the right-hand figure: 
+To reproduce the right-hand part of the figure (this one might be slow):  
 
 ```bash
-python finite_training_time_convergence.py
+python orthogonal.py
 ```
 
-The plot is saved in the folder figures.
+Plots are in the folder figures.
 
-
-### Experiment in Figure 2 - Infinite training time
-
-We train the model as described in the paragraph _Long-time limit_, with reduced number of training epochs. Feel free to adjust it. 
+### Experiment in Figure 4 - Histograms
 
 To reproduce the figure:
 
 ```bash
-python infinite_training_time.py
+python validation_token_encoding.py
 ```
 
-### Experiment in Figure 3 - Weights after training on CIFAR 
+The Histogram is in the folder figures.
 
-You can directly visualize the results using the notebsook learned_weights.ipynb using the pretrained models available in the folder checkpoints. 
+### Experiment in Figure 5 - Augmented setting
 
-Alternatively, you can train models from scratch using the following.
+To train the same model with the same setup, you can use the script in augmented.py
+
+### Experiment in Figure 6 - Positional Encoding Attention Only
+
+To reproduce the figure:
 
 ```bash
-python one_expe_cifar.py --lr 4e-2 --depth 256  --seed 1 --smooth_init SMOOTH_INIT --non_lin NON_LIN
+python pe_only.py
 ```
 
-Where SMOOTH_INIT is in [True, False]. When True, the weights are initialized smoothly. NON_LIN is the non-linearity used and can be relu, gelu, or linear. 
+The plots are in the folder figures.
+
+
+Cite
+----
+
+If you use this code in your project, please cite::
+
+Sander, M. E., Giryes, R., Suzuki, T., Blondel, M., & Peyré, G. 
+How do Transformers Perform In-Context Autoregressive Learning?. 
+In Forty-first International Conference on Machine Learning.
+https://arxiv.org/abs/2402.05787
