@@ -239,7 +239,20 @@ class CustomDataset(Dataset):
 
 
 def train(dim_in=5, n=50, embed_extension=2, heads=64, lr=1e-2, num_epochs=200, batch_size=1024, save_folder='results'):
-
+    """
+    Train a transformer model on a dataset of sequences.
+    
+    dim_in: Dimensionality of the input sequences
+    n: Length of the sequences
+    embed_extension: Extension factor for the embedding size
+    heads: Number of heads in the self-attention mechanism
+    lr: Learning rate
+    num_epochs: Number of epochs
+    batch_size: Batch size
+    save_folder: Folder to save the results
+    
+    Returns None.
+    """
 
     save_output = 'dim_in_%s_n_%s_embed_extension_%s_heads_%s_lr_%s_num_epochs_%s_batch_size_%s' % (dim_in, n, embed_extension, heads, lr, num_epochs, batch_size)
 
