@@ -1,7 +1,7 @@
 # Code to reproduce the ICML Paper : "_How do Transformers Perform In-Context Autoregressive Learning?_"
 
 
-![Autoregressive processes](figures/illustation_3d-crop)
+![Autoregressive processes](figures/illustation_3d-crop.pdf)
 
 ## Compat
 
