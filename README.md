@@ -36,6 +36,10 @@ The Histogram is in the folder figures.
 
 To train the same model with the same setup, you can use the script in augmented.py
 
+### Experiment in Figure 7 - Non-Augmented setting
+
+To train the same model with the same setup, you can use the script in non_augmented.py
+
 ### Experiment in Figure 6 - Positional Encoding Attention Only
 
 To reproduce the figure:

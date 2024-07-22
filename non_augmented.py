@@ -4,8 +4,6 @@ from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 import jax
 import jax.numpy as jnp
-from jax import grad, jit, vmap
-from jax.example_libraries import optimizers
 from scipy.stats import ortho_group  # Requires version 0.18 of scipy
 import numpy as np
 
@@ -16,7 +14,7 @@ class SelfAttention(nn.Module):
         super(SelfAttention, self).__init__()
         self.embed_size = embed_size
         self.heads = heads
-        self.head_dim = embed_size #// heads
+        self.head_dim = embed_size 
 
         self.values = nn.Linear(embed_size, embed_size * heads)
         self.keys = nn.Linear(embed_size, embed_size * heads)
@@ -54,7 +52,6 @@ class SelfAttention(nn.Module):
         if mask is not None:
             energy = energy.masked_fill(mask == 0, float("-1e20"))
 
-        # attention_tok = torch.softmax(energy / (self.embed_size ** (1 / 2)), dim=3)
         attention_tok = energy / (self.embed_size ** (1 / 2))
 
         N = query.shape[0]
@@ -76,15 +73,12 @@ class SelfAttention(nn.Module):
             energy_pos = energy_pos.masked_fill(mask == 0, float("-1e20"))
 
         attention_pos = torch.softmax(energy_pos / (self.embed_size ** (1 / 2)), dim=3)
-        #attention_pos = energy_pos / (self.embed_size ** (1 / 2))
 
-        #attention = torch.softmax((energy + energy_pos) / (self.embed_size ** (1 / 2)), dim=3)
         attention = attention_tok * attention_pos
 
         # attention shape: (N, heads, query_len, key_len)
-        out = torch.einsum("nhql,nlhd->nqhd", [attention, values ]) # + values_pos
+        out = torch.einsum("nhql,nlhd->nqhd", [attention, values ])
 
-        #print(out.shape)
         out = out.sum(2)
         out = self.fc_out(out)
 
@@ -203,10 +197,7 @@ class Transformer(nn.Module):
         out = self.decoder(src, mask)
         return self.fc_out(out)
 
-sigma = .0  # Standard deviation of epsilon
-#
-
- # gives insight on the number of data we can fit.
+sigma = .0  
 
 def dot_product(W_i, s_i):
     return jnp.dot(W_i, s_i)
@@ -241,7 +232,6 @@ class CustomDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        # Assuming your data is organized as (samples, features, targets)
         sample = self.data[index, :-1, :]  # Input features
         target = self.data[index, 1:, :]   # Target labels
 
@@ -257,13 +247,10 @@ def train(dim_in=5, n=50, embed_extension=2, heads=64, lr=1e-2, num_epochs=200, 
     D_test, W_test = batched_get_seq(2 ** 10, n=n, dim=dim_in)
 
 
-    # Assuming your NumPy array is named 'numpy_array'
-    numpy_array = np.array(D_train)  # Your NumPy array of shape (262144, 21, 16)
+    numpy_array = np.array(D_train)  
 
-    # Create an instance of your custom dataset
     custom_dataset = CustomDataset(numpy_array)
 
-    # Define DataLoader
     batch_size = min(batch_size, D_train.shape[0])
 
     train_dataloader = DataLoader(custom_dataset, batch_size=batch_size, shuffle=True)
@@ -278,10 +265,7 @@ def train(dim_in=5, n=50, embed_extension=2, heads=64, lr=1e-2, num_epochs=200, 
 
     embed_size = embed_extension * dim_in
     num_layers = 1
-    
-    # Create an instance of the model
-
-    # Define loss function and optimizer
+   
     criterion = nn.MSELoss()
 
     model = Transformer(
@@ -303,15 +287,11 @@ def train(dim_in=5, n=50, embed_extension=2, heads=64, lr=1e-2, num_epochs=200, 
     def train(epoch):
         for inputs, targets in train_dataloader:
             inputs, targets = inputs.to(device), targets.to(device)
-            # Zero the gradients
             optimizer.zero_grad()
 
-            # Forward pass
             outputs = model(inputs)
 
-            # Compute the loss
             loss = criterion(outputs[:,:], targets[:,:])
-            # Backward pass and optimization
             loss.backward()
             optimizer.step()
         if epoch % 10 == 0:
@@ -324,15 +304,9 @@ def train(dim_in=5, n=50, embed_extension=2, heads=64, lr=1e-2, num_epochs=200, 
             with torch.no_grad():
                 for inputs, targets in test_dataloader:
                     inputs, targets = inputs.to(device), targets.to(device)
-                    # Zero the gradients
-
                     outputs = model(inputs)
-
-                    # Compute the loss
                     loss = criterion(outputs[:,:], targets[:,:])
-                    #loss = criterion(outputs[:,dim_in:], targets[:,dim_in:])
 
-                # Backward pass and optimization
             test_losses.append(loss.item())
             print(f'Epoch [{epoch+1}/{num_epochs}], Test Loss: {loss.item():.4f}')
 
