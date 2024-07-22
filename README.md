@@ -1,5 +1,8 @@
 # Code to reproduce the ICML Paper : "_How do Transformers Perform In-Context Autoregressive Learning?_"
 
+
+![Autoregressive processes](figures/illustation_3d-crop)
+
 ## Compat
 
 This package has been developed and tested with `python3.11`. It is therefore not guaranteed to work with earlier versions of python.
